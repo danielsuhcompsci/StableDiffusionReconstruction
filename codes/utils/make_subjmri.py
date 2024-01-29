@@ -24,16 +24,21 @@ def main():
     # Note that most of nsd_expdesign indices are 1-base index!
     # This is why subtracting 1
     sharedix = nsd_expdesign['sharedix'] -1 
+    
+    # sessions_limit = 38
+    sessions_limit = 3
 
-    behs = pd.DataFrame()
-    for i in range(1,38):
+    behs = pd.DataFrame()    
+    # for i in range(1,38):
+    for i in range(1,sessions_limit):
         beh = nsda.read_behavior(subject=subject, 
                                 session_index=i)
+        print(beh.head())
         behs = pd.concat((behs,beh))
 
     # Caution: 73KID is 1-based! https://cvnlab.slite.page/p/fRv4lz5V2F/Behavioral-data
-    stims_unique = behs['73KID'].unique() - 1
-    stims_all = behs['73KID'] - 1
+    stims_unique = behs['73KID'].unique() - 1 # indexes of unique COCO images
+    stims_all = behs['73KID'] - 1 # indexes of COCO images for each trial    
 
     savedir = f'../../mrifeat/{subject}/'
     os.makedirs(savedir, exist_ok=True)
@@ -42,30 +47,38 @@ def main():
         np.save(f'{savedir}/{subject}_stims.npy',stims_all)
         np.save(f'{savedir}/{subject}_stims_ave.npy',stims_unique)
 
-    for i in range(1,38):
-        print(i)
+
+    # Read betas for each session
+    # for i in range(1,38): 
+    for i in range (1, sessions_limit):
+        print("reading betas for session", i)
         beta_trial = nsda.read_betas(subject=subject, 
                                 session_index=i, 
                                 trial_index=[], # empty list as index means get all for this session
                                 data_type='betas_fithrf_GLMdenoise_RR',
                                 data_format='func1pt8mm')
+        print("beta trial shape", beta_trial.shape)
         if i==1:
             betas_all = beta_trial
         else:
             betas_all = np.concatenate((betas_all,beta_trial),0)    
     
+    # get atlas for subject
+    print("reading atlas")
     atlas = nsda.read_atlas_results(subject=subject, atlas=atlasname, data_format='func1pt8mm')
     for roi,val in atlas[1].items():
-        print(roi,val)
+        print("ROI:", roi, "Val:", val)
         if val == 0:
             print('SKIP')
             continue
         else:
             betas_roi = betas_all[:,atlas[0].transpose([2,1,0])==val]
-
+        
+        # (Trials by Voxels) matrix for each ROI
+        print("Betas_roi.shape")
         print(betas_roi.shape)
         
-        # Averaging for each stimulus
+        # Averaging for each (same unique image) stimulus
         betas_roi_ave = []
         for stim in stims_unique:
             stim_mean = np.mean(betas_roi[stims_all == stim,:],axis=0)

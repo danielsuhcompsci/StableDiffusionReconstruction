@@ -229,6 +229,9 @@ class NSDAccess(object):
 
         mapp_df = pd.read_csv(os.path.join(self.nsddata_folder, 'freesurfer', 'fsaverage',
                                            'label', f'{atlas_name}.mgz.ctab'), delimiter=' ', header=None, index_col=0)
+        
+        print(mapp_df.head())
+        
         atlas_mapping = mapp_df.to_dict()[1]
         # dict((y,x) for x,y in atlas_mapping.iteritems())
         atlas_mapping = {y: x for x, y in atlas_mapping.items()}

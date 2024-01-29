@@ -5,7 +5,7 @@ import numpy as np
 from omegaconf import OmegaConf
 from tqdm import tqdm
 from einops import repeat
-from torch import autocast
+from torch import autocast, constant_pad_nd
 from contextlib import nullcontext
 from pytorch_lightning import seed_everything
 from nsd_access import NSDAccess
@@ -89,6 +89,7 @@ def main():
     precision_scope = autocast if precision == "autocast" else nullcontext
     model = load_model_from_config(config, f"{ckpt}", gpu)
     device = torch.device(f"cuda:{gpu}") if torch.cuda.is_available() else torch.device("cpu")
+    print("device:", device)
     model = model.to(device)
     sampler = DDIMSampler(model)
     sampler.make_schedule(ddim_num_steps=ddim_steps, ddim_eta=ddim_eta, verbose=False)
